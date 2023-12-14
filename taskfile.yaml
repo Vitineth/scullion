@@ -15,7 +15,7 @@ tasks:
   build-grammars:
     dir: 'grammars/c'
     cmds:
-      - GOOS=js GOARCH=wasm go build -o ../../public/antlr.wasm ./main.go
+      - GOOS=js GOARCH=wasm go build -o ../../public/antlr.wasm main.go
 
   clean-grammars:
     cmds:
@@ -57,7 +57,7 @@ tasks:
   build-metrics:
     dir: '.scratch-metrics/metricsql'
     cmds:
-      - GOOS=js GOARCH=wasm go build -o ../../public/metricsql.wasm ./main/main.go
+      - GOOS=js GOARCH=wasm go build -o ../../public/metricsql.wasm main/main.go
 
   clean-metrics:
     cmds:
@@ -72,14 +72,14 @@ tasks:
       - rm -r dist
 
   build:
-    deps:
-      - prepare-grammars
-      - prepare-metrics
-      - build-grammars
-      - build-metrics
-      - clean-grammars
-      - clean-metrics
-      - build-vite
+    cmds:
+      - task: prepare-grammars
+      - task: prepare-metrics
+      - task: build-grammars
+      - task: build-metrics
+      - task: clean-grammars
+      - task: clean-metrics
+      - task: build-vite
 
   clean:
     deps:
