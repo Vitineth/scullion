@@ -5,6 +5,7 @@ tasks:
   prepare-grammars:
     dir: '.scratch-grammars'
     cmds:
+      - task: clean-grammars
       - wget http://www.antlr.org/download/antlr-4.7-complete.jar
       - mkdir -p parser
       - rm -rf ../grammars/c/parser
@@ -15,6 +16,7 @@ tasks:
   build-grammars:
     dir: 'grammars/c'
     cmds:
+      - task: prepare-grammars
       - GOOS=js GOARCH=wasm go build -o ../../public/antlr.wasm main.go
 
   clean-grammars:
@@ -26,6 +28,7 @@ tasks:
   prepare-metrics:
     dir: '.scratch-metrics'
     cmds:
+      - task: clean-metrics
       - git clone https://github.com/VictoriaMetrics/metricsql.git metricsql
       - cd metricsql && git reset --hard a271ee257023dd183d444ec7e1b363c64a3db0e3
       - cd metricsql && git apply ../../metrics.patch
@@ -57,6 +60,7 @@ tasks:
   build-metrics:
     dir: '.scratch-metrics/metricsql'
     cmds:
+      - task: prepare-metrics
       - GOOS=js GOARCH=wasm go build -o ../../public/metricsql.wasm main/main.go
 
   clean-metrics:
@@ -73,12 +77,8 @@ tasks:
 
   build:
     cmds:
-      - task: prepare-grammars
-      - task: prepare-metrics
       - task: build-grammars
       - task: build-metrics
-      - task: clean-grammars
-      - task: clean-metrics
       - task: build-vite
 
   clean:
