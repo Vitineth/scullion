@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <link rel="icon" type="image/svg+xml" href="/vite.svg"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Vite + Preact + TS</title>
+    <script src="/wasm_exec.js"></script>
+
+    <script>
+		const go = new Go();
+		WebAssembly.instantiateStreaming(
+			fetch('metricsql.wasm'),
+			go.importObject,
+		).then((result) => {
+			go.run(result.instance);
+		}).catch((e) => alert('Failed to instantiate the MetricsQL formatter: ' + e.message));
+
+		const go2 = new Go();
+		WebAssembly.instantiateStreaming(
+			fetch('antlr.wasm'),
+			go2.importObject,
+		).then((result) => {
+			go2.run(result.instance);
+		}).catch((e) => alert('Failed to instantiate the ANTLR parser: ' + e.message));
+    </script>
+</head>
+<body>
+<div id="app"></div>
+<script type="module" src="/src/main.tsx"></script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+diff --git a/regexp_cache.go b/regexp_cache.go
+index e9d49bb..0fcdab9 100644
+--- a/regexp_cache.go
++++ b/regexp_cache.go
+@@ -4,8 +4,6 @@ import (
+ 	"regexp"
+ 	"sync"
+ 	"sync/atomic"
+-
+-	"github.com/VictoriaMetrics/metrics"
+ )
+ 
+ // CompileRegexpAnchored returns compiled regexp `^re$`.
+@@ -37,21 +35,21 @@ const regexpCacheCharsMax = 1e6
+ 
+ var regexpCacheV = func() *regexpCache {
+ 	rc := newRegexpCache(regexpCacheCharsMax)
+-	metrics.NewGauge(`vm_cache_requests_total{type="promql/regexp"}`, func() float64 {
+-		return float64(rc.Requests())
+-	})
+-	metrics.NewGauge(`vm_cache_misses_total{type="promql/regexp"}`, func() float64 {
+-		return float64(rc.Misses())
+-	})
+-	metrics.NewGauge(`vm_cache_entries{type="promql/regexp"}`, func() float64 {
+-		return float64(rc.Len())
+-	})
+-	metrics.NewGauge(`vm_cache_chars_current{type="promql/regexp"}`, func() float64 {
+-		return float64(rc.CharsCurrent())
+-	})
+-	metrics.NewGauge(`vm_cache_chars_max{type="promql/regexp"}`, func() float64 {
+-		return float64(rc.charsLimit)
+-	})
++	//metrics.NewGauge(`vm_cache_requests_total{type="promql/regexp"}`, func() float64 {
++	//	return float64(rc.Requests())
++	//})
++	//metrics.NewGauge(`vm_cache_misses_total{type="promql/regexp"}`, func() float64 {
++	//	return float64(rc.Misses())
++	//})
++	//metrics.NewGauge(`vm_cache_entries{type="promql/regexp"}`, func() float64 {
++	//	return float64(rc.Len())
++	//})
++	//metrics.NewGauge(`vm_cache_chars_current{type="promql/regexp"}`, func() float64 {
++	//	return float64(rc.CharsCurrent())
++	//})
++	//metrics.NewGauge(`vm_cache_chars_max{type="promql/regexp"}`, func() float64 {
++	//	return float64(rc.charsLimit)
++	//})
+ 	return rc
+ }()
+ 

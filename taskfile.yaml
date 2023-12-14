@@ -1,0 +1,88 @@
+version: '3'
+
+tasks:
+
+  prepare-grammars:
+    dir: '.scratch-grammars'
+    cmds:
+      - wget http://www.antlr.org/download/antlr-4.7-complete.jar
+      - mkdir -p parser
+      - rm -rf ../grammars/c/parser
+      - mkdir -p ../grammars/c/parser
+      - java -jar antlr-4.7-complete.jar ../grammars/LogParser.g4 -o ./parser/ -Dlanguage=Go
+      - mv ./grammars/* ../grammars/c/parser/
+
+  build-grammars:
+    dir: 'grammars/c'
+    cmds:
+      - GOOS=js GOARCH=wasm go build -o ../../public/antlr.wasm main.go
+
+  clean-grammars:
+    cmds:
+      - rm -rf grammars/c/parser
+      - rm -f public/antlr.wasm
+      - rm -rf .scratch-grammars
+
+  prepare-metrics:
+    dir: '.scratch-metrics'
+    cmds:
+      - git clone https://github.com/VictoriaMetrics/metricsql.git metricsql
+      - cd metricsql && git reset --hard a271ee257023dd183d444ec7e1b363c64a3db0e3
+      - cd metricsql && git apply ../../metrics.patch
+      - mkdir -p metricsql/main
+      - |
+        cat << EOF > metricsql/main/main.go
+        package main
+        
+        import (
+          "github.com/VictoriaMetrics/metricsql"
+          "syscall/js"
+        )
+        
+        func main() {
+          c := make(chan struct{}, 0)
+          js.Global().Set("prettify", js.FuncOf(PrettifyWrap))
+          <-c
+        }
+        
+        func PrettifyWrap(this js.Value, inputs []js.Value) interface{} {
+          prettify, err := metricsql.Prettify(inputs[0].String())
+          if err != nil {
+            return nil
+          }
+          return prettify
+        }
+        EOF
+
+  build-metrics:
+    dir: '.scratch-metrics/metricsql'
+    cmds:
+      - GOOS=js GOARCH=wasm go build -o ../../public/metricsql.wasm main/main.go
+
+  clean-metrics:
+    cmds:
+      - rm -rf .scratch-metrics
+
+  build-vite:
+    cmds:
+      - npm run build
+
+  clean-vite:
+    cmds:
+      - rm -r dist
+
+  build:
+    deps:
+      - prepare-grammars
+      - prepare-metrics
+      - build-grammars
+      - build-metrics
+      - clean-grammars
+      - clean-metrics
+      - build-vite
+
+  clean:
+    deps:
+      - clean-grammars
+      - clean-metrics
+      - clean-vite
