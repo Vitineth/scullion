@@ -11,12 +11,6 @@ import { LogAntlrFormatter } from "./lang/log-antlr.tsx";
 export function App() {
 	return (
 		<TabbedPane>
-			<Tab id={ 'log' } title={ 'Log Formatter' } keybind={ 'l' }>
-				<LogFormatter/>
-			</Tab>
-			<Tab id={ 'antlr' } title={ 'Log Formatter (Antlr)' } keybind={ 'a' }>
-				<LogAntlrFormatter/>
-			</Tab>
 			<Tab id={ 'json' } title={ 'JSON Formatter' } keybind={ 'j' }>
 				<JSONFormatter/>
 			</Tab>
@@ -28,6 +22,12 @@ export function App() {
 			</Tab>
 			<Tab id={ 'diff' } title={ 'Difference' } keybind={ 'd' }>
 				<DiffPane/>
+			</Tab>
+			<Tab id={ 'log' } title={ 'Log Formatter' } keybind={ 'l' }>
+				<LogFormatter/>
+			</Tab>
+			<Tab id={ 'antlr' } title={ 'Log Formatter (Antlr)' } keybind={ 'a' }>
+				<LogAntlrFormatter/>
 			</Tab>
 		</TabbedPane>
 	)
