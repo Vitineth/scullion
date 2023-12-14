@@ -5,7 +5,6 @@ tasks:
   prepare-grammars:
     dir: '.scratch-grammars'
     cmds:
-      - task: clean-grammars
       - wget http://www.antlr.org/download/antlr-4.7-complete.jar
       - mkdir -p parser
       - rm -rf ../grammars/c/parser
@@ -28,7 +27,6 @@ tasks:
   prepare-metrics:
     dir: '.scratch-metrics'
     cmds:
-      - task: clean-metrics
       - git clone https://github.com/VictoriaMetrics/metricsql.git metricsql
       - cd metricsql && git reset --hard a271ee257023dd183d444ec7e1b363c64a3db0e3
       - cd metricsql && git apply ../../metrics.patch
