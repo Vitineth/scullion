@@ -86,8 +86,8 @@ function jsonToHTML(tree: any, indent: number = 0) {
 
 
 export function JSONFormatter() {
-	const [value, setValue] = useParamState('v');
-	const [searchTerm, setSearchTerm] = useParamState('s');
+	const [value, setValue] = useParamState('v', true);
+	const [searchTerm, setSearchTerm] = useParamState('s', true);
 
 	const asJson = tryJsonParse(value);
 	const searchResult = asJson === null || searchTerm.trim().length === 0 ? null : tryJq(asJson, searchTerm);

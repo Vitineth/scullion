@@ -5,7 +5,7 @@ import { format } from "sql-formatter";
 import hljs from 'highlight.js';
 
 export function SQLFormatter() {
-	const [value, setValue] = useParamState('v');
+	const [value, setValue] = useParamState('v', true);
 
 	return (
 		<div class="log-formatter">

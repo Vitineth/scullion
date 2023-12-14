@@ -5,7 +5,7 @@ import { InputPane } from "../components/input-pane.tsx";
 import { RenderingPane } from "../components/rendering-pane.tsx";
 
 export function PromQLFormatter() {
-	const [value, setValue] = useParamState('v');
+	const [value, setValue] = useParamState('v', true);
 	const [_, setForceRerender] = useState(false);
 
 	const renderer = (s: string) => {

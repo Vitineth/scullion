@@ -216,7 +216,7 @@ function treeToHTML(tree: Node | string, indent = 0) {
 }
 
 export function LogFormatter() {
-	const [value, setValue] = useParamState('v');
+	const [value, setValue] = useParamState('v', true);
 
 	const parser = consumeToTree;
 	const renderer = treeToHTML;

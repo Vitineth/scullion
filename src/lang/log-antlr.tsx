@@ -160,7 +160,7 @@ function renderer(entity: Class | Var, indent: number = 0): string {
 }
 
 export function LogAntlrFormatter() {
-	const [value, setValue] = useParamState('v');
+	const [value, setValue] = useParamState('v', true);
 
 	const parser = (a: string) => Interpret(a);
 	const render = (a: Class | Error) => {

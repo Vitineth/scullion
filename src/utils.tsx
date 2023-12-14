@@ -5,24 +5,24 @@ export function useParams() {
 	return new URLSearchParams(window.location.search);
 }
 
-export function useParamState(key: string): [string, (v: string) => void] {
-	const [s, setS] = useState(deriveFromParameters(key));
+export function useParamState(key: string, encoded: boolean = false): [string, (v: string) => void] {
+	const [s, setS] = useState(deriveFromParameters(key, '', encoded));
 	const setter = setWithParamHistory(key, setS);
 	return [s, setter];
 }
 
-export function deriveFromParameters(key: string, fallback: string = ''): string {
+export function deriveFromParameters(key: string, fallback: string = '', encoded: boolean = false): string {
 	const params = useParams();
 	if (!params.has(key)) return fallback;
 	const value = params.get(key);
 	if (value === null) return fallback;
-	return decompressFromEncodedURIComponent(value);
+	return encoded ? decompressFromEncodedURIComponent(value) : value;
 }
 
-export function setWithParamHistory(key: string, setter: (v: string) => unknown) {
+export function setWithParamHistory(key: string, setter: (v: string) => unknown, encoded: boolean = false) {
 	return (v: string) => {
 		const params = new URLSearchParams(window.location.search);
-		params.set(key, compressToEncodedURIComponent(v));
+		params.set(key, encoded ? compressToEncodedURIComponent(v) : v);
 		history.pushState(null, '', window.location.pathname + '?' + params.toString());
 		setter(v);
 	}

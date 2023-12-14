@@ -3,8 +3,8 @@ import { InputPane } from "../components/input-pane.tsx";
 import htdiff from 'htmldiff-js';
 
 export function DiffPane() {
-	const [leftValue, setLeftValue] = useParamState('lv');
-	const [rightValue, setRightValue] = useParamState('rv');
+	const [leftValue, setLeftValue] = useParamState('lv', true);
+	const [rightValue, setRightValue] = useParamState('rv', true);
 
 
 	return (
