@@ -10,7 +10,7 @@
     <script>
 		const go = new Go();
 		WebAssembly.instantiateStreaming(
-			fetch('/metricsql.wasm'),
+			fetch('metricsql.wasm'),
 			go.importObject,
 		).then((result) => {
 			go.run(result.instance);
@@ -20,7 +20,7 @@
 
 		const go2 = new Go();
 		WebAssembly.instantiateStreaming(
-			fetch('/antlr.wasm'),
+			fetch('antlr.wasm'),
 			go2.importObject,
 		).then((result) => {
 			go2.run(result.instance);
