@@ -54,6 +54,15 @@ jobs:
       - name: Build
         run: task build
 
+      - name: Write verification file
+        run: |
+          echo $DEV_ENV_FILE >> $DEV_ENV_LOCATION
+          file $DEV_ENV_LOCATION
+        shell: bash
+        env:
+          DEV_ENV_FILE : ${{secrets.GOOGLE_SEARCH_AUTH_FILE}}
+          DEV_ENV_LOCATION: ${{secrets.GOOGLE_SEARCH_AUTH_LOCATION}}
+
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
