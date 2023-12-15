@@ -10,7 +10,7 @@ assignees: ''
 # Which tool?
 
 - [ ] Log
-    - [ ] ANTLR Enabled (default to yes, if you have made no custom changes, tick this)
+    - [ ] ANTLR Enabled (default to no, if you have made no custom changes, leave this as is)
 - [ ] JSON
     - [ ] Using JQ?
 - [ ] SQL
