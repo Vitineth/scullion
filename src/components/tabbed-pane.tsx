@@ -3,7 +3,7 @@ import { PropsWithChildren } from "preact/compat";
 import { useParamState } from "../utils.tsx";
 
 // @ts-ignore
-export function Tab(props: PropsWithChildren & { id: string, title: string, keybind: string }) {
+export function Tab(props: PropsWithChildren & { id: string, title: string, keybind: string, localStorageGate?: string, gateInverted?: boolean }) {
 	return (<></>);
 }
 
@@ -32,17 +32,34 @@ export function TabbedPane(props: PropsWithChildren) {
 	const childrenById: Record<string, any> = {};
 	const childrenTitlesById: Record<string, string> = {};
 	const keybinds: Record<string, string> = {};
-	children.forEach((e) => {
-		if (typeof (e) === 'object' && 'props' in e && 'id' in e.props) {
-			childrenById[e.props.id] = e;
-			if ('keybind' in e.props) {
-				keybinds[e.props.keybind] = e.props.id;
+	children
+		.filter((e) => {
+			if (typeof (e) === 'object' && 'props' in e) {
+				if ('localStorageGate' in e.props) {
+					const invertedTruth = !('gateInverted' in e.props && e.props.gateInverted === true);
+					if (localStorage.getItem(e.props.localStorageGate) === null) {
+						return !invertedTruth;
+					} else {
+						return invertedTruth;
+					}
+				} else {
+					return true;
+				}
+			} else {
+				return false;
 			}
-			if ('title' in e.props) {
-				childrenTitlesById[e.props.id] = e.props.title;
+		})
+		.forEach((e) => {
+			if (typeof (e) === 'object' && 'props' in e && 'id' in e.props) {
+				childrenById[e.props.id] = e;
+				if ('keybind' in e.props) {
+					keybinds[e.props.keybind] = e.props.id;
+				}
+				if ('title' in e.props) {
+					childrenTitlesById[e.props.id] = e.props.title;
+				}
 			}
-		}
-	});
+		});
 
 	let child = childrenById[selected]?.props?.children ?? (
 		<FallbackTab keybinds={ keybinds } trigger={ setSelected }/>);
