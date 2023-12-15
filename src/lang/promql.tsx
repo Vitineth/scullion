@@ -1,4 +1,4 @@
-import { useParamState } from "../utils.tsx";
+import { useParamState, useRequireWindowFunction } from "../utils.tsx";
 import { useEffect, useState } from "preact/hooks";
 import hljs from "highlight.js";
 import { InputPane } from "../components/input-pane.tsx";
@@ -7,6 +7,7 @@ import { RenderingPane } from "../components/rendering-pane.tsx";
 export function PromQLFormatter() {
 	const [value, setValue] = useParamState('v', true);
 	const [_, setForceRerender] = useState(false);
+	useRequireWindowFunction('prettify');
 
 	const renderer = (s: string) => {
 		if ((window as any).prettify === undefined) return "<p>The MetricsQL formatter hasn't loaded yet</p>";
@@ -30,15 +31,15 @@ export function PromQLFormatter() {
 			setForceRerender((v) => !v);
 		}
 
-		if ((window as any).prettify) return;
-
-		const interval = setInterval(() => {
-			if ((window as any).prettify) {
-				clearInterval(interval);
-				setForceRerender((v) => !v);
-			}
-		}, 100);
-		return () => clearInterval(interval);
+		// if ((window as any).prettify) return;
+		//
+		// const interval = setInterval(() => {
+		// 	if ((window as any).prettify) {
+		// 		clearInterval(interval);
+		// 		setForceRerender((v) => !v);
+		// 	}
+		// }, 100);
+		// return () => clearInterval(interval);
 	}, []);
 
 

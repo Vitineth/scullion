@@ -1,4 +1,4 @@
-import { useParamState } from "../utils.tsx";
+import { useParamState, useRequireWindowFunction } from "../utils.tsx";
 import { InputPane } from "../components/input-pane.tsx";
 import { RenderingPane } from "../components/rendering-pane.tsx";
 
@@ -160,11 +160,17 @@ function renderer(entity: Class | Var, indent: number = 0): string {
 }
 
 export function LogAntlrFormatter() {
-	const [value, setValue] = useParamState('v', true);
+	const [value, setValue] = useParamState('v', true)
+	useRequireWindowFunction('logAntlr');
 
-	const parser = (a: string) => Interpret(a);
-	const render = (a: Class | Error) => {
-		if (a instanceof Error) {
+	const parser = (a: string) => {
+		if (!('logAntlr' in window)) return 'Waiting for parser to be available...';
+		return Interpret(a);
+	}
+	const render = (a: Class | Error | string) => {
+		if (typeof (a) === 'string') {
+			return a;
+		} else if (a instanceof Error) {
 			return `Invalid content: ${ a.message }`;
 		} else {
 			return renderer(a, 0);
