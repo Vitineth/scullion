@@ -1,4 +1,11 @@
+<p align="center">
+<img width="200" src="/public/icon.svg"/>
+</p>
+
 # `scullion` - the simple formatter
+
+> **scullion** _[skuhl-yuhn]_  
+> a servant assigned the most menial kitchen tasks.
 
 The goal of this project is just to provide a simple formatter for a range of data types.
 
