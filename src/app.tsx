@@ -25,11 +25,10 @@ export function App() {
 			<Tab id={ 'diff' } title={ 'Difference' } keybind={ 'd' }>
 				<DiffPane/>
 			</Tab>
-			<Tab id={ 'log' } title={ 'Log Formatter (legacy)' } keybind={ 'l' } localStorageGate={ 'log:fallback' }>
+			<Tab id={ 'log' } title={ 'Log Formatter (legacy)' } keybind={ 'l' } localStorageGate={ 'log:antlr' } gateInverted>
 				<LogFormatter/>
 			</Tab>
-			<Tab id={ 'antlr' } title={ 'Log Formatter' } keybind={ 'a' } localStorageGate={ 'log:fallback' }
-				 gateInverted>
+			<Tab id={ 'antlr' } title={ 'Log Formatter' } keybind={ 'a' } localStorageGate={ 'log:antlr' }>
 				<LogAntlrFormatter/>
 			</Tab>
 		</TabbedPane>

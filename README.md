@@ -31,12 +31,11 @@ The Log Formatter has been updated to use ANTLR behind the scenes which provides
 little more buggy. Due to some deep annoyances at getting `antlr4ts` setup, this actually runs in a Go runtime loaded
 via WASM. I realise this is not remotely performant and I'd like to switch it over eventually but this will do for now.
 
-If you are having frequent problems with it, you can try falling back to the old parser which was custom written in a
-slightly cursed way. It also fails often (ie `[` or `]` in a string value might cause to react strangely) you can enter
-the following in console
+Due to some bugs, this is not the default as it needs some more work and development. If you want to try it, you can run
+the following which will enable it instead of the default.
 
 ```js
-localStorage.setItem('log:fallback', 'true');
+localStorage.setItem('log:antlr', 'true');
 ```
 
 ## MetricsQL Formatter
