@@ -7,7 +7,7 @@ export function useParams() {
 
 export function useParamState(key: string, encoded: boolean = false): [string, (v: string) => void] {
 	const [s, setS] = useState(deriveFromParameters(key, '', encoded));
-	const setter = setWithParamHistory(key, setS);
+	const setter = setWithParamHistory(key, setS, encoded);
 	return [s, setter];
 }
 
