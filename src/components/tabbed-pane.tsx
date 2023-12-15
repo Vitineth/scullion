@@ -8,20 +8,25 @@ export function Tab(props: PropsWithChildren & { id: string, title: string, keyb
 }
 
 export function FallbackTab(props: {
-	keybinds: Record<string, string>,
+	keybinds: Record<string, {id: string, name: string}>,
 	trigger: (v: string) => void,
 }) {
 	useEffect(() => {
 		const handler = (e: KeyboardEvent) => {
 			if (Object.hasOwn(props.keybinds, e.key)) {
-				props.trigger(props.keybinds[e.key]);
+				props.trigger(props.keybinds[e.key].id);
 			}
 		}
 		document.addEventListener('keydown', handler);
 		return () => document.removeEventListener('keydown', handler);
 	})
+
 	return (
-		<div/>
+		<div class="fallback">
+			<div>
+				{ Object.entries(props.keybinds).map(([k, id]) => (<div key={id.id}><code>{ k }</code> - { id.name }</div>)) }
+			</div>
+		</div>
 	);
 }
 
@@ -31,7 +36,7 @@ export function TabbedPane(props: PropsWithChildren) {
 
 	const childrenById: Record<string, any> = {};
 	const childrenTitlesById: Record<string, string> = {};
-	const keybinds: Record<string, string> = {};
+	const keybinds: Record<string, {id: string, name: string}> = {};
 	children
 		.filter((e) => {
 			if (typeof (e) === 'object' && 'props' in e) {
@@ -53,7 +58,7 @@ export function TabbedPane(props: PropsWithChildren) {
 			if (typeof (e) === 'object' && 'props' in e && 'id' in e.props) {
 				childrenById[e.props.id] = e;
 				if ('keybind' in e.props) {
-					keybinds[e.props.keybind] = e.props.id;
+					keybinds[e.props.keybind] = {id: e.props.id, name: e.props.title ?? e.props.id};
 				}
 				if ('title' in e.props) {
 					childrenTitlesById[e.props.id] = e.props.title;

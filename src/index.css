@@ -260,3 +260,21 @@ pre.clear {
     font-size: 0.7em;
     opacity: 0.8;
 }
+
+.fallback{
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #5d5d5d;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.fallback>div>div{
+    margin-bottom: 20px;
+}
+
+.fallback code{
+    background: #272727;
+    padding: 7px 7px;
+}
