@@ -1,4 +1,4 @@
-import { useState } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
 import { decompressFromEncodedURIComponent, compressToEncodedURIComponent } from 'lz-string'
 
 export function useParams() {
@@ -181,4 +181,25 @@ export function debounce(func: Function, wait: number, options?: {
 	debounced.flush = flush
 	debounced.pending = pending
 	return debounced
+}
+
+export function useRequireWindowFunction(method: string) {
+	const [, setForceRerender] = useState(false);
+
+	useEffect(() => {
+		const exists = () => method in (window as any) && typeof ((window as any)[method]) === 'function';
+		if (exists()) return;
+
+		let interval: number | undefined = setInterval(() => {
+			if (exists()) {
+				clearInterval(interval);
+				interval = undefined;
+				setForceRerender((v) => !v);
+			}
+		}, 100);
+
+		return () => {
+			if (interval !== undefined) clearInterval(interval);
+		}
+	}, []);
 }
