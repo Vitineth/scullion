@@ -6,10 +6,12 @@ import { PromQLFormatter } from "./lang/promql.tsx";
 import { LogFormatter } from "./lang/log.tsx";
 import { DiffPane } from "./lang/diff.tsx";
 import { LogAntlrFormatter } from "./lang/log-antlr.tsx";
+import { ErrorReport } from "./components/error-report.tsx";
 
 
 export function App() {
-	return (
+	return (<>
+		<ErrorReport/>
 		<TabbedPane>
 			<Tab id={ 'json' } title={ 'JSON Formatter' } keybind={ 'j' }>
 				<JSONFormatter/>
@@ -31,5 +33,5 @@ export function App() {
 				<LogAntlrFormatter/>
 			</Tab>
 		</TabbedPane>
-	)
+	</>)
 }
