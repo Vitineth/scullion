@@ -11,6 +11,7 @@ tasks:
       - mkdir -p ../grammars/c/parser
       - java -jar antlr-4.7-complete.jar ../grammars/LogParser.g4 -o ./parser/ -Dlanguage=Go
       - mv ./grammars/* ../grammars/c/parser/
+      - rm antlr-4.7-complete*
 
   build-grammars:
     dir: 'grammars/c'
