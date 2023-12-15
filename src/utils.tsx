@@ -1,5 +1,6 @@
 import { useEffect, useState } from "preact/hooks";
 import { decompressFromEncodedURIComponent, compressToEncodedURIComponent } from 'lz-string'
+import hljs, { Language } from "highlight.js";
 
 function getActiveParams(){
 	return window
@@ -242,6 +243,21 @@ export function useRequireWindowFunction(method: string) {
 
 		return () => {
 			if (interval !== undefined) clearInterval(interval);
+		}
+	}, []);
+}
+
+
+export function useRequireHljsLanguage(name: string, definition: Language) {
+	const [, setForceRerender] = useState(false);
+
+	useEffect(() => {
+		if (!hljs.listLanguages().includes(name)) {
+			hljs.registerLanguage(
+				name,
+				() => definition,
+			);
+			setForceRerender((v) => !v);
 		}
 	}, []);
 }
