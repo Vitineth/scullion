@@ -131,7 +131,7 @@ vars
     ;
 
 varx
-    : STRING '=' val
+    : STRING '=' val?
     ;
 
 

@@ -14,12 +14,14 @@ type Class = {
 };
 type Url = {
 	$type: "url"
-} & string;
+	Content: string,
+};
 type Optional = {
 	$type: "optional",
 	Value: Value,
 }
-type Value = Class | Url | string | {} | never[] | Value[] | Optional | null;
+type Nothing = { $type: "nothing" };
+type Value = Class | Url | string | {} | never[] | Value[] | Optional | null | Nothing;
 
 function Interpret(s: string): Class | Error {
 	// @ts-ignore
@@ -53,9 +55,10 @@ function InterpretVar(result: any): Value {
 			Vars: result.Vars.map((e: any) => InterpretVar(e)),
 		} satisfies Class;
 	} else if (keys(result, 'Content')) {
-		return Object.assign(result.Content, {
+		return {
 			$type: 'url',
-		}) satisfies Url;
+			Content: result.Content,
+		} satisfies Url;
 	} else if (keys(result, 'Identifier', 'Value')) {
 		return {
 			$type: "var",
@@ -63,6 +66,9 @@ function InterpretVar(result: any): Value {
 			Value: InterpretVar(result.Value),
 		} satisfies Var;
 	} else {
+		if (result.Nothing === true) {
+			return { $type: 'nothing' };
+		}
 		if (result.EmptyObject === true) {
 			return {};
 		}
@@ -91,10 +97,30 @@ function InterpretVar(result: any): Value {
 	}
 }
 
-function rendererInline(entity: Url | string | {} | Optional | null) {
+function rendererInline(entity: Url | string | {} | Optional | null | Nothing): string {
 	if (typeof (entity) === 'string') {
 		return `<span class="ind-${ 0 } value">"${ entity }"</span><br/>`;
 	}
+	if(entity === null){
+		return `<span class="ind-${ 0 } value">null</span><br/>`;
+	}
+	if ('$type' in entity) {
+		switch (entity.$type) {
+			case "optional":
+				if(entity.Value !== null && typeof(entity.Value) === 'object' && '$type' in entity.Value && (entity.Value.$type === 'class')) {
+					return `<span class="optional">Optional</span>["<span class="value">${ renderer(entity.Value) }</span>"]`
+				}else{
+					return `<span class="optional">Optional</span>["<span class="value">${ rendererInline(entity.Value) }</span>"]`
+				}
+			case "url":
+				return `<span class="ind-${ 0 } value"><a href="${entity.Content}">"${ entity.Content }"</a></span><br/>`;
+			case "nothing":
+				return `<span class="ind-${ 0 } value"></span>,`;
+			default:
+				throw new Error("Unknown type");
+		}
+	}
+	return `<span class="ind-${ 0 } value">{}</span><br/>`;
 }
 
 function renderClass(entity: Class, indent: number = 0, skipDetails = false, omitWrapper = false): string {

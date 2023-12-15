@@ -104,6 +104,16 @@ func HandleVars(vars *parser.VarsContext) ([]Var, error) {
 }
 
 func HandleVarx(varx parser.VarxContext) (*Var, error) {
+    if varx.GetChildCount() == 2 {
+        if identifier, ok := IsString(varx.GetChild(0)); ok {
+            return &Var{
+                Identifier: *identifier,
+                Value: Value{
+                    Nothing: true,
+                },
+            }, nil
+        }
+    }
 	if varx.GetChildCount() != 3 {
 		return nil, errors.New("invalid, expected 3 children")
 	}
@@ -294,12 +304,14 @@ type Value struct {
 	EmptyArray  bool
 	Classes     []Class
 	Optional    *Value
+	Nothing     bool
 }
 
 func (v Value) AsMap() map[string]interface{} {
 	r := map[string]interface{}{
 		"EmptyObject": v.EmptyObject,
 		"EmptyArray":  v.EmptyArray,
+		"Nothing": v.Nothing,
 	}
 
 	if v.Url != nil {
