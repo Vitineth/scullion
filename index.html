@@ -10,19 +10,23 @@
     <script>
 		const go = new Go();
 		WebAssembly.instantiateStreaming(
-			fetch('metricsql.wasm'),
+			fetch('/metricsql.wasm'),
 			go.importObject,
 		).then((result) => {
 			go.run(result.instance);
-		}).catch((e) => alert('Failed to instantiate the MetricsQL formatter: ' + e.message));
+		}).catch((e) => {
+			console.error('Failed to instantiate the MetricsQL formatter due to an error', e);
+		});
 
 		const go2 = new Go();
 		WebAssembly.instantiateStreaming(
-			fetch('antlr.wasm'),
+			fetch('/antlr.wasm'),
 			go2.importObject,
 		).then((result) => {
 			go2.run(result.instance);
-		}).catch((e) => alert('Failed to instantiate the ANTLR parser: ' + e.message));
+		}).catch((e) => {
+			console.error('Failed to instantiate the Log formatter formatter due to an error', e);
+		});
     </script>
 </head>
 <body>
