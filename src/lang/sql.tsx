@@ -12,7 +12,18 @@ export function SQLFormatter() {
 			<InputPane value={ value } setValue={ setValue } requestFocus/>
 			<div class="right">
 				<RenderingPane parser={ (a) => a } renderer={ (a) => (
-					`<pre><code>${ hljs.highlight(format(a), { language: 'sql' }).value }</code></pre>`
+					`<pre><code>${ hljs.highlight(format(a, {
+						paramTypes: {
+							custom: [
+								{
+									regex: ':\\w+',
+								},
+								{
+									regex: '\\$\\w+',
+								},
+							],
+						},
+					}), { language: 'sql' }).value }</code></pre>`
 				) } content={ value }/>
 			</div>
 		</div>
