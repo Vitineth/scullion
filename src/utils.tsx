@@ -1,29 +1,71 @@
 import { useEffect, useState } from "preact/hooks";
 import { decompressFromEncodedURIComponent, compressToEncodedURIComponent } from 'lz-string'
 
+function getActiveParams(){
+	return window
+		.location
+		.hash
+		.substring(1)
+		.split('&')
+		.filter((e) => e.length > 0 && e.includes('='))
+		.map((e) => [
+			decodeURIComponent(e.substring(0, e.indexOf('='))),
+			decodeURIComponent(e.substring(e.indexOf('=') + 1)),
+		])
+		.reduce((res, item) => ({
+			...res,
+			[item[0]]: item[1],
+		}), {} satisfies Record<string, string>);
+}
+
 export function useParams() {
-	return new URLSearchParams(window.location.search);
+	const params: Record<string, string> = getActiveParams();
+
+	const set = (params: Record<string, string>) => {
+		window.location.hash = Object
+			.entries(params)
+			.map(([key, value]) => [
+				encodeURIComponent(key),
+				encodeURIComponent(value),
+			])
+			.map(([key, value]) => `${ key }=${ value }`)
+			.join('&');
+	}
+	const update = (key: string, value: string) => {
+		set({
+			...getActiveParams(),
+			[key]: value,
+		});
+	}
+
+	return Object.assign({ set, update}, params);
 }
 
 export function useParamState(key: string, encoded: boolean = false): [string, (v: string) => void] {
+	if (key === 'set') throw new Error('Invalid key: "set" is reserved');
+
 	const [s, setS] = useState(deriveFromParameters(key, '', encoded));
 	const setter = setWithParamHistory(key, setS, encoded);
 	return [s, setter];
 }
 
 export function deriveFromParameters(key: string, fallback: string = '', encoded: boolean = false): string {
+	if (key === 'set') throw new Error('Invalid key: "set" is reserved');
+
 	const params = useParams();
-	if (!params.has(key)) return fallback;
-	const value = params.get(key);
-	if (value === null) return fallback;
+	if (!(key in params)) return fallback;
+	const value = params[key];
+	if (value === null || value === undefined) return fallback;
 	return encoded ? decompressFromEncodedURIComponent(value) : value;
 }
 
 export function setWithParamHistory(key: string, setter: (v: string) => unknown, encoded: boolean = false) {
+	if (key === 'set') throw new Error('Invalid key: "set" is reserved');
+
 	return (v: string) => {
-		const params = new URLSearchParams(window.location.search);
-		params.set(key, encoded ? compressToEncodedURIComponent(v) : v);
-		history.pushState(null, '', window.location.pathname + '?' + params.toString());
+		// Despite this being named as a hook it does not need to be called in order
+		const params = useParams();
+		params.update(key, encoded ? compressToEncodedURIComponent(v) : v);
 		setter(v);
 	}
 }
