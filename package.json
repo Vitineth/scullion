@@ -18,7 +18,7 @@
     "sql-formatter": "^15.3.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.23.7",
+    "@babel/core": "^7.24.3",
     "@babel/plugin-transform-react-jsx-development": "^7.22.5",
     "@babel/runtime": "^7.24.1",
     "@preact/preset-vite": "^2.8.2",
