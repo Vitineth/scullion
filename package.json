@@ -14,7 +14,7 @@
     "htmldiff-js": "^1.0.5",
     "jq-web": "^0.5.1",
     "lz-string": "^1.5.0",
-    "preact": "^10.19.3",
+    "preact": "^10.20.1",
     "sql-formatter": "^15.3.0"
   },
   "devDependencies": {
