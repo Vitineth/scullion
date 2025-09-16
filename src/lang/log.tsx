@@ -1,232 +1,526 @@
 import { useParamState } from "../utils.tsx";
 import { InputPane } from "../components/input-pane.tsx";
 import { RenderingPane } from "../components/rendering-pane.tsx";
-
-type Node = {
-	type: 'root' | 'variable' | 'class' | 'optional' | 'literal',
-	parent: Node | null,
-	children?: (Node | string)[],
-	name?: string,
-	value?: any,
-	metaType?: string,
+type Class = {
+  $type: "class";
+  $className: string;
+  [k: string]: Node;
 };
 
-function consumeToTree(value: string) {
-	const rootNode: Node = { children: [], type: 'root', parent: null };
-	let activeNode: Node = rootNode;
+type Map = {
+  $type: "map";
+  [k: string]: Node;
+};
 
-	let accumulator = '';
-	for (let i = 0; i < value.length; i++) {
-		const c = value.charAt(i);
+type Optional = {
+  $type: "optional";
+  value: Node | null;
+};
 
-		if (c === '{') {
-			// Open Class
-			console.debug(`Opening class ${ accumulator.trim() }`, activeNode);
+type Node = Node[] | Optional | Class | Map | {} | string | number | boolean;
 
-			const newNode: Node = { type: 'class', name: accumulator.trim(), parent: activeNode, children: [] };
-			if (activeNode.type === 'variable' && !Object.hasOwn(activeNode, 'children') && !('children' in activeNode)) {
-				activeNode.value = newNode;
-			} else {
-				if (activeNode.children === undefined) activeNode.children = [];
-				activeNode.children.push(newNode);
-			}
-			activeNode = newNode;
-			accumulator = '';
-		} else if (c === '}') {
-			// Options:
-			//   * Variable
-			//      * Not an array => need to save the accumulator, unless the value is already set
+class JavaObjectFormatter {
+  private input: string = "";
+  private position: number = 0;
 
-			if (activeNode.type === 'variable') {
-				if (activeNode.value === undefined) {
-					activeNode.value = accumulator.trim();
-				}
+  parse(input: string): Node {
+    this.input = input.trim();
+    this.position = 0;
+    return this.parseValue();
+  }
 
-				if (activeNode.parent === null) throw new Error('Invalid document - parent was null');
-				activeNode = activeNode.parent;
+  private parseValue(): Node {
+    this.skipWhitespace();
+    const char = this.peek();
 
-				console.debug('Closing (implied)', activeNode.name, activeNode);
+    // Check for array - only if we see '[' at the start of input or after ',' or '['
+    const isArrayStart = char === "[" && this.isAtStructuralPosition();
 
-				// if(inArray) inArray = false;
-			} else {
-				console.debug('Closing', activeNode.name, activeNode)
-				// if (activeNode.parent.type === 'variable' && Object.hasOwn(activeNode.parent, 'children')) {
-				// 	console.debug('****', activeNode);
-				// }
-			}
+    if (isArrayStart) {
+      return this.parseArray();
+    } else if (char === "{") {
+      return this.parseMap();
+    } else if (this.isOptional()) {
+      return this.parseOptional();
+    } else if (this.isClassName()) {
+      return this.parseClass();
+    } else {
+      return this.parsePrimitive();
+    }
+  }
 
-			// Close Class
-			if (activeNode.parent === null) throw new Error('Invalid document - parent was null');
-			activeNode = activeNode.parent;
-			accumulator = '';
-		} else if (c === '=') {
-			// Assign Variable
-			if (activeNode.type === 'class') {
-				// Currently in a class and the accumulator contains the variable name
-				console.debug(`Assignment to class variable ${ accumulator.trim() }`);
-				const newNode: Node = { type: 'variable', name: accumulator.trim(), value: undefined, parent: activeNode };
-				if (activeNode.children === undefined) activeNode.children = [];
-				activeNode.children.push(newNode);
-				activeNode = newNode;
-				accumulator = '';
-			} else {
-				console.debug(`Assignment to variable ${ activeNode.name }`);
-			}
-		} else if (c === ',') {
-			if (activeNode.type === 'variable') {
-				if (Object.hasOwn(activeNode, 'children')) {
-					// Is an array
-					if (accumulator.trim().length > 0) {
-						console.debug('Pushing literal', accumulator, 'to array', activeNode);
-						if (activeNode.children === undefined) activeNode.children = [];
-						activeNode.children.push(accumulator);
-						accumulator = '';
-					}
-				} else {
-					// Find the index of the next comma
-					const commaIndex = value.indexOf(',', i + 1);
-					// And then find the next delimiter
-					const delimiterIndex = Math.min(
-						value.indexOf('=', i + 1),
-						value.indexOf(']', i + 1),
-						value.indexOf('}', i + 1),
-					);
-					if (commaIndex < delimiterIndex) {
-						// Then this comma is likely part of text so pretend it didn't exist
-						accumulator += ',';
-						continue;
-					}
+  private isAtStructuralPosition(): boolean {
+    // Arrays should start at beginning of input, after ',' (array elements), or after '[' (nested arrays)
+    // BUT NOT after '=' - that might be a string value that starts with [
+    if (this.position === 0) return true;
 
-					if (activeNode.value === undefined) {
-						activeNode.value = accumulator;
-					}
+    // Look back to find the last non-whitespace character
+    let lookBack = this.position - 1;
+    while (lookBack >= 0 && /\s/.test(this.input[lookBack])) {
+      lookBack--;
+    }
 
-					console.debug('Finished assigning value to', activeNode.name, activeNode);
-					if (activeNode.parent === null) throw new Error('Invalid document - parent was null');
-					activeNode = activeNode.parent;
-					accumulator = '';
-				}
-			}
-		} else if (c === '[') {
-			if (accumulator.trim() === 'Optional') {
-				console.debug(`Opening Optional[] value`);
-				const idx = value.indexOf(']', i + 1);
-				const v: Node = { type: 'optional', value: value.substring(i + 1, idx), parent: activeNode };
-				if (Object.hasOwn(activeNode, 'children')) {
-					if (activeNode.children === undefined) activeNode.children = [];
-					activeNode.children.push(v);
-				} else {
-					activeNode.value = v;
-				}
-				i = idx;
-			} else {
-				if (activeNode.type === 'variable') {
-					console.debug(`Converting ${ activeNode.name } to array`);
-					// console.log(activeNode.name, 'is array');
-					activeNode.children = [];
-				} else {
-					throw new Error('Unexpected case');
-				}
-			}
-		} else if (c === ']') {
-			console.debug(`Closing array ${ activeNode.name }`);
-			if (accumulator.trim().length !== 0) {
-				if (activeNode.children === undefined) activeNode.children = [];
-				activeNode.children.push({ type: 'literal', value: accumulator, parent: activeNode });
-				accumulator = '';
-			}
+    if (lookBack >= 0) {
+      const prevChar = this.input[lookBack];
+      // Arrays can start after comma (for array elements) or opening brackets (nested)
+      // Special case: after '=' only if we're really sure it's an array (check next few chars)
+      if (prevChar === "," || prevChar === "[") {
+        return true;
+      } else if (prevChar === "=") {
+        // Only treat as array if we see clear array patterns like multiple elements
+        return this.looksLikeArrayAfterEquals();
+      }
+    }
 
-			if (activeNode.parent === null) throw new Error('Invalid document - parent was null');
-			activeNode = activeNode.parent;
-		} else {
-			accumulator += c;
-		}
-	}
+    return false;
+  }
 
-	return rootNode;
+  private looksLikeArrayAfterEquals(): boolean {
+    // Look ahead to see if this looks like a proper array: [elem1, elem2, ...] or []
+    let pos = this.position + 1; // Skip the '['
+    let depth = 1;
+    let hasComma = false;
+    let isEmpty = false;
+
+    // Check for empty array first
+    while (pos < this.input.length && /\s/.test(this.input[pos])) {
+      pos++;
+    }
+    if (pos < this.input.length && this.input[pos] === "]") {
+      isEmpty = true;
+    }
+
+    if (isEmpty) return true; // [] is definitely an array
+
+    // Check for comma-separated elements
+    pos = this.position + 1;
+    while (pos < this.input.length && depth > 0) {
+      const char = this.input[pos];
+      if (char === "[") {
+        depth++;
+      } else if (char === "]") {
+        depth--;
+      } else if (char === "," && depth === 1) {
+        hasComma = true;
+      }
+      pos++;
+    }
+
+    // If we found a comma at the top level, it's likely a real array
+    return hasComma;
+  }
+
+  private parseArray(): Node[] {
+    this.skipWhitespace();
+
+    if (this.peek() !== "[") {
+      throw new Error("Expected [");
+    }
+
+    this.advance(); // Skip '['
+    this.skipWhitespace();
+
+    const result: Node[] = [];
+
+    // Handle empty array
+    if (this.peek() === "]") {
+      this.advance(); // Skip ']'
+      return result;
+    }
+
+    while (this.position < this.input.length && this.peek() !== "]") {
+      this.skipWhitespace();
+
+      // Check if we're at the end of the array before parsing
+      if (this.peek() === "]") {
+        break;
+      }
+
+      const value = this.parseValue();
+      result.push(value);
+
+      this.skipWhitespace();
+
+      if (this.peek() === ",") {
+        this.advance(); // Skip ','
+      } else if (this.peek() === "]") {
+        break;
+      } else {
+        // If we don't see comma or ], break to avoid infinite loop
+        break;
+      }
+    }
+
+    if (this.peek() === "]") {
+      this.advance(); // Skip ']'
+    }
+
+    return result;
+  }
+
+  private parseClass(): Class {
+    this.skipWhitespace();
+
+    // Extract class name
+    const className = this.parseClassName();
+
+    if (this.peek() !== "{") {
+      throw new Error("Expected { after class name");
+    }
+
+    this.advance(); // Skip '{'
+    this.skipWhitespace();
+
+    const result: Class = {
+      $type: "class",
+      $className: className,
+    };
+
+    // Handle empty class
+    if (this.peek() === "}") {
+      this.advance(); // Skip '}'
+      return result;
+    }
+
+    // Parse field=value pairs
+    while (this.position < this.input.length && this.peek() !== "}") {
+      this.skipWhitespace();
+
+      const fieldName = this.parseFieldName();
+      this.skipWhitespace();
+
+      if (this.peek() !== "=") {
+        throw new Error("Expected = after field name");
+      }
+
+      this.advance(); // Skip '='
+      this.skipWhitespace();
+
+      const value = this.parseValue();
+      result[fieldName] = value;
+
+      this.skipWhitespace();
+      if (this.peek() === ",") {
+        this.advance(); // Skip ','
+      } else if (this.peek() === "}") {
+        break;
+      }
+    }
+
+    if (this.peek() === "}") {
+      this.advance(); // Skip '}'
+    }
+
+    return result;
+  }
+
+  private parseClassName(): string {
+    this.skipWhitespace();
+    let className = "";
+
+    while (this.position < this.input.length && this.peek() !== "{") {
+      className += this.advance();
+    }
+
+    return className.trim();
+  }
+
+  private parseFieldName(): string {
+    this.skipWhitespace();
+    let fieldName = "";
+
+    while (this.position < this.input.length) {
+      const char = this.peek();
+
+      if (
+        char === "=" ||
+        char === "," ||
+        char === "}" ||
+        char === "]" ||
+        /\s/.test(char)
+      ) {
+        break;
+      }
+
+      fieldName += this.advance();
+    }
+
+    return fieldName.trim();
+  }
+
+  private parseMap(): Map | {} {
+    this.skipWhitespace();
+
+    if (this.peek() !== "{") {
+      throw new Error("Expected {");
+    }
+
+    this.advance(); // Skip '{'
+    this.skipWhitespace();
+
+    // Handle empty object
+    if (this.peek() === "}") {
+      this.advance(); // Skip '}'
+      return {};
+    }
+
+    const result: Map = {
+      $type: "map",
+    };
+
+    // Parse field=value pairs
+    while (this.position < this.input.length && this.peek() !== "}") {
+      this.skipWhitespace();
+
+      const fieldName = this.parseFieldName();
+      this.skipWhitespace();
+
+      if (this.peek() !== "=") {
+        throw new Error("Expected = after field name");
+      }
+
+      this.advance(); // Skip '='
+      this.skipWhitespace();
+
+      const value = this.parseValue();
+      result[fieldName] = value;
+
+      this.skipWhitespace();
+      if (this.peek() === ",") {
+        this.advance(); // Skip ','
+      } else if (this.peek() === "}") {
+        break;
+      }
+    }
+
+    if (this.peek() === "}") {
+      this.advance(); // Skip '}'
+    }
+
+    return result;
+  }
+
+  private parseOptional(): Optional | string {
+    this.skipWhitespace();
+
+    // Check for Optional.empty
+    if (this.input.substr(this.position, 14) === "Optional.empty") {
+      this.position += 14;
+      return { $type: "optional", value: null };
+    }
+
+    // Parse Optional[value]
+    if (this.input.substr(this.position, 9) === "Optional[") {
+      this.position += 9; // Skip 'Optional['
+
+      // Parse the value inside Optional[...] as a primitive string
+      const value = this.parseOptionalValue();
+
+      this.skipWhitespace();
+      if (this.peek() === "]") {
+        this.advance(); // Skip ']'
+      }
+      return { $type: "optional", value };
+    }
+
+    throw new Error("Invalid Optional format");
+  }
+
+  private parseOptionalValue(): string {
+    this.skipWhitespace();
+    let value = "";
+
+    while (this.position < this.input.length) {
+      const char = this.peek();
+
+      if (char === "]") {
+        // End of Optional
+        break;
+      } else {
+        value += this.advance();
+      }
+    }
+
+    return value.trim();
+  }
+
+  private parsePrimitive(): string | number | boolean {
+    const value = this.parseValueString();
+
+    // If no value was parsed, we're at end of structure - don't infinite loop
+    if (
+      value === "" &&
+      (this.peek() === "}" || this.peek() === "]" || this.peek() === "")
+    ) {
+      return "";
+    }
+
+    // Try to parse as number
+    const numValue = Number(value);
+    if (!isNaN(numValue) && isFinite(numValue) && value.trim() !== "") {
+      return numValue;
+    }
+
+    // Check for booleans
+    if (value === "true") return true;
+    if (value === "false") return false;
+
+    // Return as string
+    return value;
+  }
+
+  private parseValueString(): string {
+    this.skipWhitespace();
+    let value = "";
+    let braceDepth = 0;
+
+    while (this.position < this.input.length) {
+      const char = this.peek();
+
+      if (char === "{") {
+        braceDepth++;
+        value += this.advance();
+      } else if (char === "}") {
+        if (braceDepth === 0) {
+          // End of current structure
+          break;
+        }
+        braceDepth--;
+        value += this.advance();
+      } else if (char === "," && braceDepth === 0) {
+        // Check if this comma is at the start of a new line (continuation pattern)
+        // If the next non-whitespace character is a field name pattern, this comma ends the value
+        const nextNonWhitespace = this.peekNextNonWhitespace();
+        if (nextNonWhitespace && this.looksLikeFieldStart(this.position + 1)) {
+          break;
+        }
+        value += this.advance();
+      } else if (char === "]" && braceDepth === 0 && value === "") {
+        // Empty value at end of array
+        break;
+      } else {
+        value += this.advance();
+      }
+    }
+
+    return value.trim();
+  }
+
+  private peekNextNonWhitespace(): string {
+    let pos = this.position + 1;
+    while (pos < this.input.length && /[ \t]/.test(this.input[pos])) {
+      pos++;
+    }
+    return pos < this.input.length ? this.input[pos] : "";
+  }
+
+  private looksLikeFieldStart(startPos: number): boolean {
+    // Skip whitespace
+    while (startPos < this.input.length && /[ \t]/.test(this.input[startPos])) {
+      startPos++;
+    }
+
+    // Look for pattern: word characters followed by =
+    let pos = startPos;
+    while (pos < this.input.length && /[a-zA-Z0-9_]/.test(this.input[pos])) {
+      pos++;
+    }
+
+    // Skip whitespace
+    while (pos < this.input.length && /[ \t]/.test(this.input[pos])) {
+      pos++;
+    }
+
+    return pos < this.input.length && this.input[pos] === "=";
+  }
+
+  private peek(): string {
+    return this.position < this.input.length ? this.input[this.position] : "";
+  }
+
+  private advance(): string {
+    return this.position < this.input.length ? this.input[this.position++] : "";
+  }
+
+  private skipWhitespace(): void {
+    while (
+      this.position < this.input.length &&
+      /[ \t]/.test(this.input[this.position])
+    ) {
+      this.position++;
+    }
+  }
+
+  private isOptional(): boolean {
+    return this.input.substr(this.position, 8) === "Optional";
+  }
+
+  private isClassName(): boolean {
+    // Check if current position starts with ClassName{ pattern
+    const remaining = this.input.substr(this.position);
+    return /^[A-Z]\w*\{/.test(remaining);
+  }
 }
 
-function treeToHTML(tree: Node | string, indent = 0) {
-	function rootToHtml(tree: Node, indent: number) {
-		if (tree.children === undefined) return '';
-		return tree.children.map((e) => treeToHtmlInternal(e, indent)).join('');
-	}
+export function consumeToTree(input: string): Node {
+  const formatter = new JavaObjectFormatter();
+  const x = formatter.parse(input);
+  console.log(x);
+  return x;
+}
 
-	function variableToHtml(tree: Node, indent: number) {
-		if (Object.hasOwn(tree, 'children') && tree.children) {
-			if (tree.children.length === 0) {
-				return `<span class="identifier ind-${ indent }">${ tree.name }</span>=[],<br/>`;
-			}
-			return `<details open class="ind-${ indent }"><summary><span class="identifier">${ tree.name }</span>=[<span class="show-on-hide">...]</span></summary>${ tree.children.map((e) => treeToHTML(e, 1)).join('') }]</details>`;
-		} else {
-			if (typeof (tree.value) === 'string') {
-				if ((tree.metaType ?? "string") === "string") {
-					return `<span class="identifier ind-${ indent }">${ tree.name }</span>=<span class="value type-${ tree.metaType ?? 'string' }">"${ tree.value }"</span>,<br/>`
-				} else {
-					return `<span class="identifier ind-${ indent }">${ tree.name }</span>=<span class="value type-${ tree.metaType ?? 'string' }">${ tree.value }</span>,<br/>`
-				}
-			} else if (typeof (tree.value) === 'object' && tree.value.type === 'class') {
-				return `<details open class="ind-${ indent }"><summary><span class="identifier">${ tree.name }</span>=<span class="class">${ tree.value.name }</span>{<span class="show-on-hide">...}</span></summary>${ classToHtml(tree.value, 0, true, true) }}</details>`
-			} else {
-				return `<span class="identifier ind-${ indent }">${ tree.name }</span>=${ treeToHtmlInternal(tree.value, indent) },<br/>`
-			}
-		}
-	}
+function treeToHTMLWithoutIndent(tree: Node): string {
+  return treeToHTML(tree, 0);
+}
 
-	function classToHtml(tree: Node, indent: number, skipDetails = false, omitWrapper = false) {
-		if (skipDetails) {
-			if (omitWrapper) {
-				return (tree.children ?? []).map((e) => treeToHtmlInternal(e, indent + 1)).join('');
-			} else {
-				return `<span class="identifier ind-${ indent } class">${ tree.name }</span>{<br/>${ (tree.children ?? []).map((e) => treeToHtmlInternal(e, indent + 1)).join('') }}`;
-			}
-		} else {
-			if (omitWrapper) {
-				throw new Error('Cannot omit name in a details element')
-			} else {
-				return `<details open class="ind-${ indent }"><summary><span class="identifier class">${ tree.name }</span>{<span class="show-on-hide">...}</summary>${ (tree.children ?? []).map((e) => treeToHtmlInternal(e, 1)).join('') }}</details>`;
-			}
-		}
-	}
+function treeToHTML(tree: Node | null, indent: number = 0): string {
+  if (tree === null) {
+    return `<span>null</span>`;
+  }
 
-	function literalToHtml(tree: Node, indent: number) {
-		return `<span class="ind-${ indent } value">"${ tree.value }"</span><br/>`;
-	}
+  if (typeof tree === "object" && "$type" in tree) {
+    // Actual object
+    switch (tree.$type) {
+      case "class":
+      case "map":
+        return `<details open class=""><summary><span class="identifier">${tree.$className ?? ""}</span>{<span class="show-on-hide">...}</span></summary><div class="ind-${indent + 1}">${Object.entries(
+          tree,
+        )
+          .filter((e) => e[0] !== "$type" && e[0] !== "$className")
+          .map(
+            (entry) =>
+              `<span class="identifier ">${entry[0]}</span>=${treeToHTML(entry[1], indent + 1)}`,
+          )
+          .join("<br/>")}</div>}</details>`;
+        break;
 
-	function optionalToHtml(tree: Node, indent: number) {
-		return `<span class="optional ind-${ indent }">Optional</span>["<span class="value">${ tree.value }</span>"]`;
-	}
-
-	const entityMap: Record<Node['type'], (n: Node, i: number) => string> = {
-		'root': rootToHtml,
-		'variable': variableToHtml,
-		'class': classToHtml,
-		'literal': literalToHtml,
-		'optional': optionalToHtml,
-	};
-	const fallback = () => 'UNKNOWN';
-
-	function treeToHtmlInternal(tree: Node | string, indent: number) {
-		if (typeof (tree) === 'string') return tree;
-		return (entityMap[tree.type] ?? fallback)(tree, indent);
-	}
-
-	if (typeof (tree) === 'string') return tree;
-	return treeToHtmlInternal(tree, indent);
+      case "optional":
+        return `<span class="optional">Optional</span>[<span class="value">${treeToHTML(tree.value, indent)}</span>]`;
+    }
+  } else if (typeof tree === "object" && Array.isArray(tree)) {
+    return (
+      `<details open class=""><summary>[<span class="show-on-hide">...]</span></summary><div class="ind-${indent + 1}">` +
+      tree.map((e) => treeToHTML(e, indent)).join("<br/>") +
+      "</div>]</details>"
+    );
+  } else {
+    // Primitive
+    return `<span class="value">"${tree}"</span>`;
+  }
 }
 
 export function LogFormatter() {
-	const [value, setValue] = useParamState('v', true);
+  const [value, setValue] = useParamState("v", true);
 
-	const parser = consumeToTree;
-	const renderer = treeToHTML;
+  const parser = consumeToTree;
+  const renderer = treeToHTMLWithoutIndent;
 
-	return (
-		<div class="log-formatter">
-			<InputPane value={ value } setValue={ setValue } requestFocus/>
-			<div class="right">
-				<RenderingPane content={ value } parser={ parser } renderer={ renderer }/>
-			</div>
-		</div>
-	)
+  return (
+    <div class="log-formatter">
+      <InputPane value={value} setValue={setValue} requestFocus />
+      <div class="right">
+        <RenderingPane content={value} parser={parser} renderer={renderer} />
+      </div>
+    </div>
+  );
 }
