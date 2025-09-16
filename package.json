@@ -6,8 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build --base=/scullion/",
-    "preview": "vite preview",
-    "antlr4ts": "antlr4ts -o src/parser -visitor grammars/LogParser.g4"
+    "preview": "vite preview"
   },
   "dependencies": {
     "highlight.js": "^11.9.0",
@@ -22,7 +21,6 @@
     "@babel/plugin-transform-react-jsx-development": "^7.22.5",
     "@babel/runtime": "^7.24.7",
     "@preact/preset-vite": "^2.8.2",
-    "antlr4ts-browser-cli": "0.5.0-alpha.7",
     "babel-plugin-transform-hook-names": "^1.0.2",
     "typescript": "^5.4.5",
     "vite": "^5.2.13",
