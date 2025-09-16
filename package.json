@@ -20,7 +20,7 @@
     "@babel/core": "^7.24.7",
     "@babel/plugin-transform-react-jsx-development": "^7.22.5",
     "@babel/runtime": "^7.24.7",
-    "@preact/preset-vite": "^2.8.2",
+    "@preact/preset-vite": "^2.10.2",
     "babel-plugin-transform-hook-names": "^1.0.2",
     "typescript": "^5.9.2",
     "vite": "^5.4.20",
