@@ -44,7 +44,7 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/setup-node@v5
         with:
-          node-version: 19.3
+          node-version: 22
       - uses: actions/setup-java@v5
         with:
           distribution: "temurin"
